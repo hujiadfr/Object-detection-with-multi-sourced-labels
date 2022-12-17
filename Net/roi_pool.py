@@ -3,7 +3,7 @@ import time
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-from utils import array_tools as at
+from utils import array_tool as at
 from torchvision.ops import RoIPool
 class VGG16RoIHead(nn.Module):
     """Faster R-CNN Head for VGG-16 based implementation.

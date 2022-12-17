@@ -4,6 +4,8 @@ import torch.nn as nn
 import numpy as np
 from torchvision.ops import nms
 from chainer import cuda
+from Net.utils.bbox_tools import loc2bbox
+
 
 def _enumerate_shifted_anchor(anchor_base, feat_stride, height, width):          # 利用base anchor生成所有对应feature map的anchor
     # Enumerate all shifted anchors:                                             # anchor_base :(9,4) 坐标，这里 A=9
@@ -29,39 +31,6 @@ def _enumerate_shifted_anchor(anchor_base, feat_stride, height, width):         
              shift.reshape((1, K, 4)).transpose((1, 0, 2))
     anchor = anchor.reshape((K * A, 4)).astype(np.float32)
     return anchor     # 返回（K，4），所有anchor的坐标
-
-def loc2bbox(src_bbox, loc):
-    xp = cuda.get_array_module(src_bbox)
-    if src_bbox.shape[0] == 0:
-        return xp.zeros((0, 4), dtype=loc.dtype)
-
-    #src_bbox :These coordinates are:math:
-    #`p_{ymin}, p_{xmin}, p_{ymax}, p_{xmax}`.
-    src_bbox = src_bbox.astype(src_bbox.dtype, copy=False)
-    #坐标转换从左上右下转成长宽中心
-    src_height = src_bbox[:, 2] - src_bbox[:, 0]
-    src_width = src_bbox[:, 3] - src_bbox[:, 1]
-    src_ctr_y = src_bbox[:, 0] + 0.5 * src_height
-    src_ctr_x = src_bbox[:, 1] + 0.5 * src_width
-    #loc :This contains values :math:`t_y, t_x, t_h, t_w`.
-    #拿出训练好的偏移量和缩放量
-    dy = loc[:, 0::4]
-    dx = loc[:, 1::4]
-    dh = loc[:, 2::4]
-    dw = loc[:, 3::4]
-    #调整anchors
-    ctr_y = dy * src_height[:, xp.newaxis] + src_ctr_y[:, xp.newaxis]
-    ctr_x = dx * src_width[:, xp.newaxis] + src_ctr_x[:, xp.newaxis]
-    h = xp.exp(dh) * src_height[:, xp.newaxis]
-    w = xp.exp(dw) * src_width[:, xp.newaxis]
-    #重新转换回来xyhw的格式,这样比直接回归坐标要好
-    dst_bbox = xp.zeros(loc.shape, dtype=loc.dtype)
-    dst_bbox[:, 0::4] = ctr_y - 0.5 * h
-    dst_bbox[:, 1::4] = ctr_x - 0.5 * w
-    dst_bbox[:, 2::4] = ctr_y + 0.5 * h
-    dst_bbox[:, 3::4] = ctr_x + 0.5 * w
-
-    return dst_bbox
 
 
 
