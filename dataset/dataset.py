@@ -41,7 +41,34 @@ def preprocess(img, min_size=600, max_size=1000):
 # This is a sample data loader
 
 # %%
-def load_image(path, classes):
+# def load_image(path, classes):
+#     with open(path, 'r', encoding='utf8') as fp:
+#             json_data = json.load(fp)
+#     imgs = []
+#     for sample_data in json_data['smaple_data']:
+#         img = {}
+#         img['height'] = sample_data['height']
+#         img['width'] = sample_data['width']
+#         for i in range(len(sample_data['filename'])):
+#                     if sample_data['filename'][i] == 'n' and sample_data['filename'][i+1] == '0':
+#                         break
+#         sample_path = sample_data['filename'][i:]
+#         if(classes == 0):
+#             img['label'] = 0 #car
+#             img['path'] = 'nuimages/train/car/' + sample_path
+#         else:
+#             img['label'] = 1 #human
+#             img['path'] = 'nuimages/train/human/' + sample_path
+#         img['annotations'] = []
+#         for annotation in json_data['annotations']:
+#             if(annotation['sample_data_token'] == sample_data['token']):
+#                 img['annotations'].append(annotation)
+#         imgs.append(img)
+#     return imgs
+
+
+
+def load_valimage(path):
     with open(path, 'r', encoding='utf8') as fp:
             json_data = json.load(fp)
     imgs = []
@@ -53,16 +80,15 @@ def load_image(path, classes):
                     if sample_data['filename'][i] == 'n' and sample_data['filename'][i+1] == '0':
                         break
         sample_path = sample_data['filename'][i:]
-        if(classes == 0):
-            img['label'] = 0 #car
-            img['path'] = 'nuimages/train/car/' + sample_path
-        else:
-            img['label'] = 1 #human
-            img['path'] = 'nuimages/train/human/' + sample_path
+        img['path'] = 'nuimages/val/human&car/' + sample_path
         img['annotations'] = []
+        img['label'] = []
         for annotation in json_data['annotations']:
             if(annotation['sample_data_token'] == sample_data['token']):
                 img['annotations'].append(annotation)
+                if (annotation['category_token'] == 'fd69059b62a3469fbaef25340c0eab7f'):
+                    img['label'].append(0)
+                else: img['label'].append(1)
         imgs.append(img)
     return imgs
 
@@ -95,10 +121,7 @@ class Transform(object):
         #bbox = torch.from_numpy(bbox_list)
         bbox = resize_bbox(bbox_list, (H, W), (o_H, o_W))
         label = in_data['label']
-        if (label == 0):
-            label = np.zeros(bbox.shape[0])
-        else:
-            label = np.ones(bbox.shape[0])
+        label = np.array(label)
         #label = torch.from_numpy(label)
         # horizontally flip
         img, params = random_flip(
