@@ -107,6 +107,59 @@ class Transform(object):
             bbox, (o_H, o_W), x_flip=params['x_flip'])
         return img, bbox, label, scale
 
+
+def load_testimage(path):
+    with open(path, 'r', encoding='utf8') as fp:
+            json_data = json.load(fp)
+    imgs = []
+    for sample_data in json_data['smaple_data']:
+        img = {}
+        img['height'] = sample_data['height']
+        img['width'] = sample_data['width']
+        for i in range(len(sample_data['filename'])):
+                    if sample_data['filename'][i] == 'n' and sample_data['filename'][i+1] == '0':
+                        break
+        sample_path = sample_data['filename'][i:]
+        img['path'] = 'nuimages/val/human&car/' + sample_path
+        img['annotations'] = []
+        img['label'] = []
+        for annotation in json_data['annotations']:
+            if(annotation['sample_data_token'] == sample_data['token']):
+                img['annotations'].append(annotation)
+                if (annotation['category_token'] == 'fd69059b62a3469fbaef25340c0eab7f'):
+                    img['label'].append(0)
+                else: img['label'].append(1)
+        imgs.append(img)
+    return imgs
+class test_Transform(object):
+
+    def __init__(self, min_size=600, max_size=1000):
+        self.min_size = min_size
+        self.max_size = max_size
+
+    def __call__(self, in_data):
+        img_path = in_data['path']
+        img = read_image(img_path)
+        img = preprocess(img, self.min_size, self.max_size)
+        _, o_H, o_W = img.shape
+        H = in_data['height']
+        W = in_data['width']
+        scale = o_H / H
+        bbox_list = []
+        for obj in in_data['annotations']:
+            bbox_list.append(obj['bbox'])
+        bbox_list = np.array(bbox_list)
+        #bbox = torch.from_numpy(bbox_list)
+        bbox = resize_bbox(bbox_list, (H, W), (o_H, o_W))
+        label = in_data['label']
+        label = np.array(label)
+        #label = torch.from_numpy(label)
+        # horizontally flip
+        img, params = random_flip(
+            img, x_random=True, return_param=True)
+        bbox = flip_bbox(
+            bbox, (o_H, o_W), x_flip=params['x_flip'])
+        return img, bbox, label,
 # %%
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, data):
@@ -114,13 +167,35 @@ class Dataset(torch.utils.data.Dataset):
         self.tsf = Transform()
 
     def __getitem__(self, idx): #data is imgs[index]
-        img, bbox, label, scale = self.tsf(self.data.data[idx])
+        img, bbox, label, scale = self.tsf(self.data[idx])
         # TODO: check whose stride is negative to fix this instead copy all
         # some of the strides of a given numpy array are negative.
         return_val = (img.copy(), bbox.copy(), label.copy(), scale)
         return img.copy(), bbox.copy(), label.copy(), scale
 
     def __len__(self):
-        return len(self.data.data)
+        return len(self.data)
+
+
+class TestDataset:
+    def __init__(self, data):
+        self.data = data
+    def __getitem__(self, idx):
+        in_data = self.data[idx]
+        img_path = in_data['path']
+        ori_img = read_image(img_path)
+        #img, bbox, label, scale = self.tsf(self.data[idx])
+        label = in_data['label']
+        label = np.array(label)
+        bbox_list = []
+        for obj in in_data['annotations']:
+            bbox_list.append(obj['bbox'])
+        bbox_list = np.array(bbox_list)
+        img = preprocess(ori_img)
+        return img, ori_img.shape[1:], bbox_list, label
+
+
+    def __len__(self):
+        return len(self.data)
 
 

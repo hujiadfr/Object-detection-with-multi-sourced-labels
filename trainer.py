@@ -8,7 +8,7 @@ from Net.utils.creator_tool import AnchorTargetCreator, ProposalTargetCreator
 from torch import nn
 import torch as t
 from utils import array_tool as at
-from utils.vis_tool import Visualizer
+# from utils.vis_tool import Visualizer
 
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 
@@ -54,7 +54,7 @@ class FasterRCNNTrainer(nn.Module):
 
         self.optimizer = self.faster_rcnn.get_optimizer()
         # visdom wrapper
-        self.vis = 'faster-rcnn'  # visdom env
+        # self.vis = Visualizer(env='faster-rcnn')  # visdom env
 
         # indicators for training status
         self.rpn_cm = ConfusionMeter(2)
@@ -184,6 +184,38 @@ class FasterRCNNTrainer(nn.Module):
 
     def get_meter_data(self):
         return {k: v.value()[0] for k, v in self.meters.items()}
+
+    def save(self, save_optimizer=False, save_path=None, **kwargs):
+        """serialize models include optimizer and other info
+        return path where the model-file is stored.
+
+        Args:
+            save_optimizer (bool): whether save optimizer.state_dict().
+            save_path (string): where to save model, if it's None, save_path
+                is generate using time str and info from kwargs.
+
+        Returns:
+            save_path(str): the path to save models.
+        """
+        save_dict = dict()
+
+        save_dict['model'] = self.faster_rcnn.state_dict()
+
+        if save_optimizer:
+            save_dict['optimizer'] = self.optimizer.state_dict()
+
+        if save_path is None:
+            timestr = time.strftime('%m%d%H%M')
+            save_path = 'checkpoints/fasterrcnn_%s' % timestr
+            for k_, v_ in kwargs.items():
+                save_path += '_%s' % v_
+
+        save_dir = os.path.dirname(save_path)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        t.save(save_dict, save_path)
+        return save_path
 
 
 def _smooth_l1_loss(x, t, in_weight, sigma):
