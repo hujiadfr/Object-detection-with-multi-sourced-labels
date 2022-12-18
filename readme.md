@@ -1,7 +1,15 @@
-# Project 6
-1. 数据集预处理
-2. 将其输入到一个预训练好的神经网络中（ResNeXt等）获得对应的feature map；
-3. 对这个feature map中的每一点设定预定个的ROI，从而获得多个候选ROI；
-4. 将这些候选的ROI送入RPN网络进行二值分类（前景或背景）和BB回归，过滤掉一部分候选的ROI；
-5. 对这些剩下的ROI进行ROIAlign操作（即先将原图和feature map的pixel对应起来，然后将feature map和固定的feature对应起来）；
-6. 对这些ROI进行分类（N类别分类）、BB回归和MASK生成（在每一个ROI里面进行FCN操作）
+# Faster-R-CNN
+Object detection with multi-sourced labels 
+
+数据集下载
+百度网盘链接：https://pan.baidu.com/s/16SxckIPBok6bfdbTyBL_VQ?pwd=0000 
+提取码：0000
+
+训练所需的voc_weights_resnet.pth或者voc_weights_vgg.pth以及主干的网络权重可以在百度云下载。
+voc_weights_resnet.pth是resnet为主干特征提取网络用到的；
+voc_weights_vgg.pth是vgg为主干特征提取网络用到的；
+链接: https://pan.baidu.com/s/1S6wG8sEXBeoSec95NZxmlQ
+提取码: 8mgp
+
+在colab上运行run_on_colab.ipynb
+google mydrive上需要提前把dataset压缩包以及预训练权重上传上去，
