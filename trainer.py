@@ -216,6 +216,16 @@ class FasterRCNNTrainer(nn.Module):
 
         t.save(save_dict, save_path)
         return save_path
+    def load(self, path, load_optimizer=True, parse_opt=False, ):
+        state_dict = t.load(path)
+        if 'model' in state_dict:
+            self.faster_rcnn.load_state_dict(state_dict['model'])
+        else:  # legacy way, for backward compatibility
+            self.faster_rcnn.load_state_dict(state_dict)
+            return self
+        if 'optimizer' in state_dict and load_optimizer:
+            self.optimizer.load_state_dict(state_dict['optimizer'])
+        return self
 
 
 def _smooth_l1_loss(x, t, in_weight, sigma):

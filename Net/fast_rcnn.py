@@ -295,7 +295,7 @@ class FasterRCNN(nn.Module):
         return optimizer, It could be overwriten if you want to specify
         special optimizer
         """
-        lr = 1e-3
+        lr = 0.01
         params = []
         for key, value in dict(self.named_parameters()).items():
             if value.requires_grad:

@@ -59,23 +59,33 @@ def train(**kwargs):
     trainer = FasterRCNNTrainer(faster_rcnn).cuda()
     # trainer.vis.text(dataset.db.label_names, win='labels')
     best_map = 0
-    lr = 1e-3
+    lr = 0.1
     lr_decay = 0.1
     best_map = 0
+    best_path = "best_model "
     for epoch in range(100):
         trainer.reset_meters()
-        for img, bbox_, label_, scale in car_dataloader:
-            scale = at.scalar(scale)
+        # for img, bbox_, label_, scale in car_dataloader:
+        #     scale = at.scalar(scale)
+        #     img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
+        #     trainer.train_step(img, bbox, label, scale)
+        # for img, bbox_, label_, scale in human_dataloader:
+        #     scale = at.scalar(scale)
+        #     img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
+        #     trainer.train_step(img, bbox, label, scale)
+        for i in range(400):
+            # a = next(iter(car_dataloader))
+            img, bbox_, label_, scale = next(iter(car_dataloader))
+            img2, bbox2_, label2_, scale2 = next(iter(human_dataloader))
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
-            trainer.train_step(img, bbox, label, scale)
-        for img, bbox_, label_, scale in human_dataloader:
+            img2, bbox2, label2 = img2.cuda().float(), bbox2_.cuda(), label2_.cuda()
             scale = at.scalar(scale)
-            img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
+            scale2 = at.scalar(scale2)
             trainer.train_step(img, bbox, label, scale)
+            trainer.train_step(img2, bbox2, label2, scale2)
 
         eval_result = eval(test_dataloader, faster_rcnn)
         #trainer.vis.plot('test_map', eval_result['map'])
-        print(eval_result['map'])
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_),
                                                   str(eval_result['map']),
@@ -85,8 +95,8 @@ def train(**kwargs):
         if eval_result['map'] > best_map:
             best_map = eval_result['map']
             best_path = trainer.save(best_map=best_map)
-        if epoch == 50:
-            trainer.load(best_path)
+        if epoch == 20 or epoch == 60 or epoch == 80:
+            # trainer.load(best_path)
             trainer.faster_rcnn.scale_lr(lr_decay)
             lr_ = lr_ * lr_decay
 
